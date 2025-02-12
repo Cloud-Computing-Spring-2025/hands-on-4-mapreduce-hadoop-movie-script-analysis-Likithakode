@@ -5,6 +5,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
@@ -44,6 +46,27 @@ public class MovieScriptAnalysis {
         job3.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job3, new Path(args[1]));
         FileOutputFormat.setOutputPath(job3, new Path(args[2] + "/task3"));
-        System.exit(job3.waitForCompletion(true) ? 0 : 1);
+        job3.waitForCompletion(true);
+
+        // Task 4: Hadoop Counters Output
+        Job job4 = Job.getInstance(conf, "Hadoop Counter Output");
+        job4.setJarByClass(MovieScriptAnalysis.class);
+        job4.setMapperClass(ScriptCounterMapper.class);
+        job4.setNumReduceTasks(0); // No reducer needed
+        FileInputFormat.addInputPath(job4, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job4, new Path(args[2] + "/task4"));
+
+        boolean job4Completed = job4.waitForCompletion(true);
+        if (job4Completed) {
+            Counters counters = job4.getCounters();
+            System.out.println("\nHadoop Counter Output:");
+            System.out.println("Total Lines Processed: " + counters.findCounter(ScriptCounterMapper.ScriptCounters.TOTAL_LINES_PROCESSED).getValue());
+            System.out.println("Total Words Processed: " + counters.findCounter(ScriptCounterMapper.ScriptCounters.TOTAL_WORDS_PROCESSED).getValue());
+            System.out.println("Total Characters Processed: " + counters.findCounter(ScriptCounterMapper.ScriptCounters.TOTAL_CHARACTERS_PROCESSED).getValue());
+            System.out.println("Total Unique Words Identified: " + counters.findCounter(ScriptCounterMapper.ScriptCounters.TOTAL_UNIQUE_WORDS_IDENTIFIED).getValue());
+            System.out.println("Number of Characters Speaking: " + counters.findCounter(ScriptCounterMapper.ScriptCounters.NUMBER_OF_CHARACTERS_SPEAKING).getValue());
+        }
+
+        System.exit(job4Completed ? 0 : 1);
     }
 }
